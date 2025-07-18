@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  const sheetURL = "https://script.google.com/macros/s/AKfycbysCsXfJZ-SFk4gPJ-LrZK6f6Hl64VJc0NeZdDQg5yPdup0-g7Y9dyUr8NYX1LqSRgU/exec";
+  const sheetURL = "https://script.google.com/macros/s/AKfycbz52lT0lKEUDIHjhc9xQ_RIOfqO9EchaF1Jk-WCcoNyxdHiJyW5jhRLgT6e8yR6_Ok/exec";
 
   try {
     const response = await fetch(sheetURL + `?ip=${ip}`);
