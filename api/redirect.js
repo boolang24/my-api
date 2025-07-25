@@ -1,62 +1,38 @@
-import crypto from "crypto";
-
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
+  const ip =
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    "unknown";
 
-  const ip = req.headers["x-forwarded-for"]?.split(',')[0] || req.socket.remoteAddress || "unknown";
-  const hash = crypto.createHash("sha256").update(ip).digest("hex").substring(0, 16);
-
-  // Ganti ke link Google Apps Script milikmu
-  const sheetURL = "https://script.google.com/macros/s/AKfycbwLrnM-rD3I6z7e7Qg9Dp_hVybDVKV2VM3tQ1fIJq0A4M2WJXprUcSgOTQnLvTFGOtF/exec";
-
-  const directlinks = [
-    "https://siblinggut.com/u5se2wg3?key=3bdba92060257b990b3bf917b9fa01e9",
-    "https://siblinggut.com/u5se2wg3?key=d8fec171c5e71319b894d7bf45ea954c",
-    "https://siblinggut.com/u5se2wg3?key=267cf6ba29121d04dca551dd8586fbed",
-    "https://siblinggut.com/u5se2wg3?key=66e79a753269d03ddec67bae4a63fdcd"
-  ];
-
-  const nativeAds = [
-    {
-      key: "6f272ad156a043df17f952f8be2133c7",
-      domain: "thermometerpushfulabnegate.com"
-    },
-    {
-      key: "087a5434b38672b575440c316bebe4f4",
-      domain: "siblinggut.com"
-    }
-  ];
+  const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+  const sheetURL =
+    "https://script.google.com/macros/s/AKfycbwLrnM-rD3I6z7e7Qg9Dp_hVybDVKV2VM3tQ1fIJq0A4M2WJXprUcSgOTQnLvTFGOtF/exec";
 
   try {
-    const checkRes = await fetch(`${sheetURL}?check=${hash}`);
-    const clicked = (await checkRes.text()).includes("FOUND");
+    const checkURL = `${sheetURL}?ip=${ip}&date=${today}&check=1`;
+    const check = await fetch(checkURL);
+    const isAlreadyLogged = await check.text();
 
-    if (!clicked) {
-      await fetch(`${sheetURL}?ip=${ip}&hash=${hash}`);
-
-      const directlink = directlinks[Math.floor(Math.random() * directlinks.length)];
-      const native = nativeAds[Math.floor(Math.random() * nativeAds.length)];
-      const popunder = directlink; // atau pisahkan kalau mau beda
-
-      return res.status(200).json({
-        showAds: true,
-        directlink,
-        nativeKey: native.key,
-        nativeDomain: native.domain,
-        popunder,
-        hash
-      });
+    if (isAlreadyLogged === "exists") {
+      // Sudah tercatat hari ini → tidak redirect ke iklan
+      return res.redirect(302, "https://your-website-url.com"); // ganti ke landing page kamu
     }
 
-    return res.status(200).json({
-      showAds: false,
-      hash
-    });
+    // Belum tercatat → log IP dan redirect ke iklan
+    await fetch(`${sheetURL}?ip=${ip}&date=${today}`);
 
-  } catch (e) {
-    console.error("Gagal komunikasi ke Sheet:", e);
-    return res.status(500).json({ error: "Gagal komunikasi ke Google Sheet" });
+    // Daftar directlink acak
+    const links = [
+      "https://thermometerpushfulabnegate.com/dwrpn1ns7?key=61637c39d8fe762ff37b9627e3bd95d3",
+      "https://thermometerpushfulabnegate.com/dwrpn1ns7?key=98924fe5e40aa1565494e91c2887bb37",
+      "https://thermometerpushfulabnegate.com/dwrpn1ns7?key=aa66bc713fed7d0d95815a2ccaa4db97"
+    ];
+
+    const randomLink = links[Math.floor(Math.random() * links.length)];
+    return res.redirect(302, randomLink);
+  } catch (error) {
+    console.error("Redirect error:", error);
+    return res.status(500).json({ error: "Something went wrong." });
   }
 }
